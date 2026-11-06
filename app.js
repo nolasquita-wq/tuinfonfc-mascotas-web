@@ -18,12 +18,38 @@ const rows = () => catalog.filter(p=>cart[p.id]>0);
 const subtotal = () => rows().reduce((total,p)=>total+cart[p.id]*p.price,0);
 function setQty(id,amount) {
   if(!catalog.some(p=>p.id===id)||!Number.isInteger(amount)) return;
+  const existing=cart[id]>0;
   if(amount<=0) delete cart[id]; else cart[id]=Math.min(amount,20);
-  save('cart',cart); renderCart();
+  save('cart',cart);
+  if(existing&&amount>0){
+    const input=$('cart').querySelector('[data-count="'+id+'"]');
+    const line=input.closest('.cart-line');
+    input.value=cart[id];
+    line.querySelector('[data-delta="-1"]').disabled=cart[id]===1;
+    line.querySelector('[data-delta="1"]').disabled=cart[id]===20;
+    line.querySelector('[data-line-total]').textContent=euro(catalog.find(p=>p.id===id).price*cart[id]);
+    $('cart').querySelector('[data-subtotal]').textContent='Subtotal '+euro(subtotal());
+    renderSummary();
+  }else renderCart();
 }
 function renderCart() {
+  $('cart').innerHTML=rows().length
+    ? '<div class="panel">'+rows().map(p=>`<div class="line cart-line">
+      <a class="cart-product" href="#producto/${p.id}">${art(p)}<span><strong>${p.name}</strong><br>${euro(p.price)} por unidad</span></a>
+      <div class="quantity">
+        <button class="secondary" data-qty="${p.id}" data-delta="-1" aria-label="Quitar una unidad" ${cart[p.id]===1?'disabled':''}>−</button>
+        <input type="number" min="1" max="20" step="1" data-count="${p.id}" value="${cart[p.id]}" aria-label="Cantidad de ${p.name}">
+        <button class="secondary" data-qty="${p.id}" data-delta="1" aria-label="Añadir una unidad" ${cart[p.id]===20?'disabled':''}>+</button>
+      </div>
+      <button class="secondary remove-item" data-remove="${p.id}" aria-label="Quitar ${p.name} de la cesta">
+        <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 10v7m4-7v7"/></svg>
+      </button><strong data-line-total>${euro(p.price*cart[p.id])}</strong>
+      </div>`).join('')+'<p class="price" data-subtotal>Subtotal '+euro(subtotal())+'</p><div class="actions"><a class="button" href="#pedido">Continuar al pedido</a><a class="button secondary" href="#tienda">Seguir comprando</a></div></div>'
+    : '<div class="panel"><h2>Tu cesta te está esperando.</h2><p>Elige una chapa para el collar o el arnés.</p><a class="button" href="#tienda">Explorar dispositivos</a></div>';
+  renderSummary();
+}
+function renderSummary(){
   $('count').textContent=rows().reduce((total,p)=>total+cart[p.id],0);
-  $('cart').innerHTML=rows().length ? '<div class="panel">'+rows().map(p=>'<div class="line"><strong>'+p.name+'</strong><span>'+euro(p.price*cart[p.id])+'</span><div><button class="secondary" data-qty="'+p.id+'" data-delta="-1" aria-label="Quitar una unidad">−</button> '+cart[p.id]+' <button class="secondary" data-qty="'+p.id+'" data-delta="1" aria-label="Añadir una unidad">+</button> <button class="secondary" data-remove="'+p.id+'">Eliminar</button></div></div>').join('')+'<p class="price">Subtotal '+euro(subtotal())+'</p><a class="button" href="#pedido">Continuar al pedido</a></div>' : '<p>Tu cesta está vacía.</p><a class="button" href="#tienda">Explorar la tienda</a>';
   const shipping=$('checkout').elements.shipping.value==='canarias'?200:400;
   $('summary').textContent=rows().length?'Productos '+euro(subtotal())+' · Envío '+euro(shipping)+' · Total '+euro(subtotal()+shipping):'La cesta está vacía.';
   $('checkout').hidden=!rows().length;
@@ -34,12 +60,14 @@ function route() {
   const product=catalog.find(p=>p.id===id);
   const target=page==='producto'&&!product?'tienda':(document.getElementById(page)?.classList.contains('page')?page:'inicio');
   document.querySelectorAll('.page').forEach(el=>el.hidden=el.id!==target);
-  document.querySelectorAll('nav a').forEach(a=>{if(a.hash==='#'+target) a.setAttribute('aria-current','page'); else a.removeAttribute('aria-current');});
+  const navTarget={producto:'tienda',pedido:'carrito',pedidos:'carrito'}[target]||target;
+  document.querySelectorAll('nav a').forEach(a=>{if(a.hash==='#'+navTarget) a.setAttribute('aria-current','page'); else a.removeAttribute('aria-current');});
   if(target==='producto') $('product').innerHTML='<div class="product-detail">'+art(product)+'<div><p class="eyebrow">ACCESORIOS NFC</p><h1>'+product.name+'</h1><p>'+product.body+'</p><p class="price">'+euro(product.price)+'</p><button data-add="'+product.id+'">Añadir a la cesta</button></div></div>';
+  if(target!=='inicio') document.querySelector('.hero-media video').pause();
   if(target==='pedidos') $('orders').innerHTML=orders.length?orders.map(o=>'<article class="panel"><h2>'+escape(o.id)+'</h2><p>'+escape(o.alias)+' · '+euro(o.total)+'</p><p>'+escape(o.items.join(', '))+'</p></article>').join(''):'<p>Aún no hay pedidos guardados aquí.</p>';
   window.scrollTo(0,0);
 }
-$('checkout').elements.shipping.addEventListener('change',renderCart);
+$('checkout').elements.shipping.addEventListener('change',renderSummary);
 $('checkout').addEventListener('submit',event=>{
   event.preventDefault(); if(!rows().length)return;
   const form=new FormData(event.currentTarget), alias=String(form.get('alias')).trim(); if(!alias)return;
@@ -89,6 +117,14 @@ async function nfc(operation,kind='',value='') {
 $('read').onclick=()=>nfc('read');
 $('erase').onclick=()=>{const dialog=$('confirm');dialog.returnValue='';dialog.showModal();};
 $('confirm').onclose=()=>{if($('confirm').returnValue==='erase')nfc('erase');};
+$('cart').addEventListener('change',event=>{
+  const input=event.target.closest('input[data-count]');
+  if(!input)return;
+  if(!input.checkValidity()||!Number.isInteger(input.valueAsNumber)){
+    input.value=cart[input.dataset.count];return;
+  }
+  setQty(input.dataset.count,input.valueAsNumber);
+});
 document.addEventListener('click',event=>{
   const button=event.target.closest('button');if(!button)return;
   const d=button.dataset;

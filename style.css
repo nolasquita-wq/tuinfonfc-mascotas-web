@@ -14,3 +14,14 @@ nav a{padding:6px 9px}
 .manual-grid .panel>.button,.manual-downloads{margin-top:auto}
 .manual-grid .button{display:flex;justify-content:center;align-items:center;min-height:52px;text-align:center}
 .manual-downloads{display:grid;gap:10px}
+
+.how-steps{display:grid;gap:12px;max-width:680px;padding-left:24px;margin:0 0 32px}
+.cart-product{display:flex;align-items:center;gap:12px;flex:1 1 220px;text-decoration:none}
+.cart-product img{width:64px;height:64px;border-radius:8px}
+.quantity{display:inline-flex;align-items:stretch;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.quantity button,.line .quantity input{width:44px;min-height:44px;margin:0;padding:0;text-align:center;border:0;border-radius:0}
+.quantity input{appearance:textfield}
+.quantity input::-webkit-inner-spin-button,.quantity input::-webkit-outer-spin-button{appearance:none;margin:0}
+.quantity button:disabled{opacity:.35;cursor:default}
+.quantity :focus-visible{outline-offset:-3px}
+.remove-item{display:grid;place-items:center;min-width:44px;min-height:44px}
