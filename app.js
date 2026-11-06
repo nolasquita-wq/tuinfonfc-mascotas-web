@@ -2,8 +2,8 @@
 const catalog = [
   { id:'silicona', name:'Chapa de silicona', price:890, color:'#e9bd80', body:'Chapa blanda de perfil redondo para sujetar con anilla.', shape:'<circle cx="140" cy="118" r="60" fill="#c97958"/><circle cx="140" cy="70" r="7" fill="#fff1d7"/>' },
   { id:'rigida', name:'Chapa rígida', price:690, color:'#dce9d9', body:'Identificación compacta de plástico rígido para el collar.', shape:'<rect x="92" y="61" width="96" height="117" rx="25" fill="#658a79"/><circle cx="140" cy="76" r="7" fill="#e7f0dc"/>' },
-  { id:'pasador', name:'Pasador para arnés', price:990, color:'#f3e3b8', body:'Formato que se desliza por una correa. Ancho compatible pendiente de confirmar con la muestra.', shape:'<path d="M42 106h196v35H42z" fill="#977758"/><rect x="83" y="84" width="114" height="79" rx="18" fill="#c49545"/>' },
-  { id:'clip', name:'Chapa con clip', price:1090, color:'#e4dcee', body:'Accesorio desmontable para collar o arnés. Sujeción pendiente de probar.', shape:'<path d="M127 77V53a13 13 0 0 1 26 0v28" fill="none" stroke="#805f86" stroke-width="10"/><rect x="94" y="81" width="92" height="90" rx="21" fill="#95749c"/>' }
+  { id:'pasador', name:'Pasador para arnés', price:990, color:'#f3e3b8', body:'Formato que se desliza por una correa.', shape:'<path d="M42 106h196v35H42z" fill="#977758"/><rect x="83" y="84" width="114" height="79" rx="18" fill="#c49545"/>' },
+  { id:'clip', name:'Chapa con clip', price:1090, color:'#e4dcee', body:'Accesorio desmontable para collar o arnés.', shape:'<path d="M127 77V53a13 13 0 0 1 26 0v28" fill="none" stroke="#805f86" stroke-width="10"/><rect x="94" y="81" width="92" height="90" rx="21" fill="#95749c"/>' }
 ];
 const $ = id => document.getElementById(id);
 const euro = n => new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR'}).format(n/100);
@@ -38,7 +38,7 @@ function route() {
   const target=page==='producto'&&!product?'tienda':(document.getElementById(page)?.classList.contains('page')?page:'inicio');
   document.querySelectorAll('.page').forEach(el=>el.hidden=el.id!==target);
   document.querySelectorAll('nav a').forEach(a=>{if(a.hash==='#'+target) a.setAttribute('aria-current','page'); else a.removeAttribute('aria-current');});
-  if(target==='producto') $('product').innerHTML='<div class="product-detail">'+art(product)+'<div><p class="eyebrow">CONCEPTO DE CATÁLOGO</p><h1>'+product.name+'</h1><p>'+product.body+'</p><p class="price">'+euro(product.price)+'</p><button data-add="'+product.id+'">Añadir a la cesta</button></div></div>';
+  if(target==='producto') $('product').innerHTML='<div class="product-detail">'+art(product)+'<div><p class="eyebrow">ACCESORIOS NFC</p><h1>'+product.name+'</h1><p>'+product.body+'</p><p class="price">'+euro(product.price)+'</p><button data-add="'+product.id+'">Añadir a la cesta</button></div></div>';
   if(target==='pedidos') $('orders').innerHTML=orders.length?orders.map(o=>'<article class="panel"><h2>'+escape(o.id)+'</h2><p>'+escape(o.alias)+' · '+euro(o.total)+'</p><p>'+escape(o.items.join(', '))+'</p></article>').join(''):'<p>Aún no hay pedidos guardados aquí.</p>';
   window.scrollTo(0,0);
 }
@@ -49,7 +49,7 @@ $('checkout').addEventListener('submit',event=>{
   const id='M-'+Date.now().toString(36).toUpperCase();
   orders=[{id,alias,items:rows().map(p=>cart[p.id]+' × '+p.name),total:subtotal()+(form.get('shipping')==='canarias'?200:400)},...orders].slice(0,50);
   save('orders',orders);cart={};save('cart',cart);event.currentTarget.reset();renderCart();
-  $('receipt').innerHTML='Pedido de prueba '+id+' guardado. <a href="#pedidos">Ver pedidos</a>';
+  $('receipt').innerHTML='Pedido '+id+' guardado. <a href="#pedidos">Ver pedidos</a>';
 });
 function renderProfiles() {
   $('profiles').innerHTML=profiles.map((p,i)=>'<article class="panel"><h2>'+escape(p.pet)+'</h2>'+(p.phone?'<p>Contacto '+escape(p.phone)+'</p>':'')+(p.notes?'<p>'+escape(p.notes)+'</p>':'')+'<div class="actions"><button data-write="'+i+'">Grabar '+(p.url?'enlace':'texto')+'</button><button class="secondary" data-edit="'+i+'">Editar</button><button class="secondary" data-delete="'+i+'">Quitar borrador</button></div></article>').join('');
@@ -95,5 +95,15 @@ document.addEventListener('click',event=>{
   if(d.delete!==undefined&&confirm('¿Quitar esta ficha guardada en el dispositivo?')){profiles.splice(Number(d.delete),1);editIndex=null;$('profile').reset();save('profiles',profiles);renderProfiles();}
   if(d.write!==undefined){const p=profiles[Number(d.write)];if(confirm('¿Grabar esta información en la chapa? Se sustituirá su contenido actual.'))nfc('write',p.url?'url':'text',p.url||[p.pet,p.phone&&'Contacto: '+p.phone,p.notes].filter(Boolean).join('\n'));}
 });
+$('clear-data').onclick=()=>{
+  if(!confirm('¿Borrar la cesta, las fichas y los pedidos guardados en este dispositivo?'))return;
+  for(const key of ['cart','orders','profiles'])localStorage.removeItem('mascotas:'+key);
+  cart={};orders=[];profiles=[];editIndex=null;
+  $('profile').reset();$('checkout').reset();$('receipt').textContent='';$('orders').textContent='';
+  $('nfc-status').textContent='';renderCart();renderProfiles();
+  $('privacy-status').textContent='Datos locales borrados.';
+};
 window.addEventListener('hashchange',route);
 renderCart();renderProfiles();route();
+
+
