@@ -1,9 +1,9 @@
 'use strict';
 const catalog = [
-  { id:'silicona', name:'Chapa de silicona', price:890, color:'#e9bd80', body:'Chapa blanda de perfil redondo para sujetar con anilla.', shape:'<circle cx="140" cy="118" r="60" fill="#c97958"/><circle cx="140" cy="70" r="7" fill="#fff1d7"/>' },
-  { id:'rigida', name:'Chapa rígida', price:690, color:'#dce9d9', body:'Identificación compacta de plástico rígido para el collar.', shape:'<rect x="92" y="61" width="96" height="117" rx="25" fill="#658a79"/><circle cx="140" cy="76" r="7" fill="#e7f0dc"/>' },
-  { id:'pasador', name:'Pasador para arnés', price:990, color:'#f3e3b8', body:'Formato que se desliza por una correa.', shape:'<path d="M42 106h196v35H42z" fill="#977758"/><rect x="83" y="84" width="114" height="79" rx="18" fill="#c49545"/>' },
-  { id:'clip', name:'Chapa con clip', price:1090, color:'#e4dcee', body:'Accesorio desmontable para collar o arnés.', shape:'<path d="M127 77V53a13 13 0 0 1 26 0v28" fill="none" stroke="#805f86" stroke-width="10"/><rect x="94" y="81" width="92" height="90" rx="21" fill="#95749c"/>' }
+  { id:'silicona', name:'Chapa de silicona', price:890, body:'Chapa blanda de perfil redondo para sujetar con anilla.' },
+  { id:'rigida', name:'Chapa rígida', price:690, body:'Identificación compacta de plástico rígido para el collar.' },
+  { id:'pasador', name:'Pasador para arnés', price:990, body:'Formato que se desliza por una correa.' },
+  { id:'clip', name:'Chapa con clip', price:1090, body:'Accesorio desmontable para collar o arnés.' }
 ];
 const $ = id => document.getElementById(id);
 const euro = n => new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR'}).format(n/100);
@@ -13,10 +13,7 @@ function save(key,value) { localStorage.setItem('mascotas:'+key,JSON.stringify(v
 let cart=load('cart',{}), orders=load('orders',[]), profiles=load('profiles',[]);
 const native=window.MascotasNfc;
 if(native) document.documentElement.classList.add('native');
-const art = p => {
-  const svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 215"><rect width="280" height="215" fill="'+p.color+'"/><ellipse cx="140" cy="178" rx="72" ry="9" opacity=".12"/>'+p.shape+'<path d="M132 112q12 11 0 22m9-28q18 17 0 34m10-41q24 24 0 48" fill="none" stroke="#fff8e8" stroke-width="3" stroke-linecap="round"/></svg>';
-  return '<img alt="Ilustración de '+p.name.toLowerCase()+'" src="data:image/svg+xml,'+encodeURIComponent(svg)+'">';
-};
+const art = p => '<img alt="Imagen orientativa de '+p.name.toLowerCase()+'" src="'+p.id+'.webp" width="720" height="720">';
 const rows = () => catalog.filter(p=>cart[p.id]>0);
 const subtotal = () => rows().reduce((total,p)=>total+cart[p.id]*p.price,0);
 function setQty(id,amount) {
