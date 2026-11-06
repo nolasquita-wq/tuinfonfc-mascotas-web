@@ -46,11 +46,18 @@ $('checkout').elements.shipping.addEventListener('change',renderCart);
 $('checkout').addEventListener('submit',event=>{
   event.preventDefault(); if(!rows().length)return;
   const form=new FormData(event.currentTarget), alias=String(form.get('alias')).trim(); if(!alias)return;
+  const dialog=$('order-confirm');
+  $('order-preview').textContent=$('summary').textContent;
+  dialog.returnValue=''; dialog.showModal();
+});
+$('order-confirm').onclose=()=>{
+  if($('order-confirm').returnValue!=='save'||!rows().length)return;
+  const form=new FormData($('checkout')), alias=String(form.get('alias')).trim(); if(!alias)return;
   const id='M-'+Date.now().toString(36).toUpperCase();
   orders=[{id,alias,items:rows().map(p=>cart[p.id]+' × '+p.name),total:subtotal()+(form.get('shipping')==='canarias'?200:400)},...orders].slice(0,50);
-  save('orders',orders);cart={};save('cart',cart);event.currentTarget.reset();renderCart();
+  save('orders',orders);cart={};save('cart',cart);$('checkout').reset();renderCart();
   $('receipt').innerHTML='Pedido '+id+' guardado. <a href="#pedidos">Ver pedidos</a>';
-});
+};
 function renderProfiles() {
   $('profiles').innerHTML=profiles.map((p,i)=>'<article class="panel"><h2>'+escape(p.pet)+'</h2>'+(p.phone?'<p>Contacto '+escape(p.phone)+'</p>':'')+(p.notes?'<p>'+escape(p.notes)+'</p>':'')+'<div class="actions"><button data-write="'+i+'">Grabar '+(p.url?'enlace':'texto')+'</button><button class="secondary" data-edit="'+i+'">Editar</button><button class="secondary" data-delete="'+i+'">Quitar borrador</button></div></article>').join('');
 }
@@ -93,7 +100,15 @@ document.addEventListener('click',event=>{
   if(d.remove)setQty(d.remove,0);
   if(d.edit!==undefined){editIndex=Number(d.edit);Object.entries(profiles[editIndex]).forEach(([key,val])=>$('profile').elements[key].value=val);$('profile').elements.pet.focus();}
   if(d.delete!==undefined&&confirm('¿Quitar esta ficha guardada en el dispositivo?')){profiles.splice(Number(d.delete),1);editIndex=null;$('profile').reset();save('profiles',profiles);renderProfiles();}
-  if(d.write!==undefined){const p=profiles[Number(d.write)];if(confirm('¿Grabar esta información en la chapa? Se sustituirá su contenido actual.'))nfc('write',p.url?'url':'text',p.url||[p.pet,p.phone&&'Contacto: '+p.phone,p.notes].filter(Boolean).join('\n'));}
+  if(d.write!==undefined){
+    const p=profiles[Number(d.write)];
+    pendingWrite={kind:p.url?'url':'text',value:p.url||[p.pet,p.phone&&'Contacto: '+p.phone,p.notes].filter(Boolean).join('\n')};
+    const dialog=$('write-confirm');
+    $('write-preview').textContent=pendingWrite.value;
+    $('replace-nfc').checked=false;
+    $('write-approve').disabled=true;
+    dialog.returnValue='';dialog.showModal();
+  }
 });
 $('clear-data').onclick=()=>{
   if(!confirm('¿Borrar la cesta, las fichas y los pedidos guardados en este dispositivo?'))return;
@@ -103,7 +118,15 @@ $('clear-data').onclick=()=>{
   $('nfc-status').textContent='';renderCart();renderProfiles();
   $('privacy-status').textContent='Datos locales borrados.';
 };
+let pendingWrite=null;
+$('replace-nfc').onchange=()=>{$('write-approve').disabled=!$('replace-nfc').checked;};
+$('write-confirm').onclose=()=>{
+  const choice=pendingWrite;pendingWrite=null;
+  if(choice&&$('write-confirm').returnValue==='write'&&$('replace-nfc').checked)nfc('write',choice.kind,choice.value);
+};
 window.addEventListener('hashchange',route);
 renderCart();renderProfiles();route();
+
+
 
 
