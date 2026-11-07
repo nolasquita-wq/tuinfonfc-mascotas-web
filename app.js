@@ -66,6 +66,8 @@ function renderSummary(){
 function renderProducts(){
 $('products').innerHTML=catalog.filter(p=>p.visible!==false).map(p=>'<article class="card"><a href="#producto/'+p.id+'">'+art(p)+'<h2>'+escape(p.name)+'</h2></a><p>'+escape(p.body)+'</p><p class="price">'+euro(p.price)+'</p><button data-add="'+p.id+'" '+(p.stock===0?'disabled':'')+'> '+(p.stock===0?'Agotado':'Añadir a la cesta')+'</button></article>').join('');
 }
+const heroVideo=document.querySelector('.hero-media video');
+let previousPage;
 function route() {
   const [page,id]=location.hash.slice(1).split('/');
   const product=catalog.find(p=>p.id===id&&p.visible!==false);
@@ -74,7 +76,11 @@ function route() {
   const navTarget={producto:'tienda',pedido:'carrito',pedidos:'carrito'}[target]||target;
   document.querySelectorAll('nav a').forEach(a=>{if(a.hash==='#'+navTarget) a.setAttribute('aria-current','page'); else a.removeAttribute('aria-current');});
   if(target==='producto') $('product').innerHTML='<div class="product-detail">'+art(product)+'<div><p class="eyebrow">ACCESORIOS NFC</p><h1>' +escape(product.name)+'</h1><p>'+escape(product.body)+'</p><p class="price">'+euro(product.price)+'</p><button data-add="'+product.id+'">Añadir a la cesta</button></div></div>';
-  if(target!=='inicio') document.querySelector('.hero-media video').pause();
+  if(target!=='inicio') heroVideo.pause();
+  else if(previousPage!=='inicio'&&!matchMedia('(prefers-reduced-motion: reduce)').matches){
+    heroVideo.play().catch(()=>{});
+  }
+  previousPage=target;
   if(target==='pedidos') $('orders').innerHTML=orders.length?orders.map(o=>'<article class="panel"><h2>'+escape(o.id)+'</h2><p>'+escape(o.alias)+' · '+euro(o.total)+'</p><p>'+escape(o.items.join(', '))+'</p></article>').join(''):'<p>Aún no hay pedidos guardados aquí.</p>';
   window.scrollTo(0,0);
 }
