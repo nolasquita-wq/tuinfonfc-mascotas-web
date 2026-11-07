@@ -25,3 +25,13 @@ nav a{padding:6px 9px}
 .quantity button:disabled{opacity:.35;cursor:default}
 .quantity :focus-visible{outline-offset:-3px}
 .remove-item{display:grid;place-items:center;min-width:44px;min-height:44px}
+
+#products .card {
+  display: flex;
+  flex-direction: column;
+}
+
+#products .card > button {
+  margin-top: auto;
+  padding-inline: 8px;
+}
