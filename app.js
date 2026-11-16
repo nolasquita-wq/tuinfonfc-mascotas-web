@@ -60,7 +60,12 @@ function renderCart() {
 }
 function renderSummary(){
   $('count').textContent=rows().reduce((total,p)=>total+cart[p.id],0);
-  $('summary').textContent=rows().length?'Subtotal estimado '+euro(subtotal())+'. Comprueba el envío y el total en Revisar pedido.':'La cesta está vacía.';
+  $('summary').innerHTML=rows().length
+    ? '<h2>Resumen del pedido</h2>'+rows().map(p=>`<div class="checkout-item">
+        ${art(p)}<span>${escape(p.name)}<small>Cantidad: ${cart[p.id]}</small></span>
+        <strong>${euro(cart[p.id]*p.price)}</strong></div>`).join('')
+      +'<div class="checkout-total"><span>Subtotal</span><strong>'+euro(subtotal())+'</strong></div>'
+    : '<p>La cesta está vacía.</p>';
   $('checkout').hidden=!rows().length;
 }
 function renderProducts(){
@@ -103,10 +108,6 @@ $('checkout').addEventListener('submit',async event=>{
     const previous=load('pending-sale',null);
     const selection=JSON.stringify(request);
     const pending=previous?.selection===selection?previous:{selection,token:crypto.randomUUID()};
-    if(pending.quote){
-      await confirmSale({...request,token:pending.token,quote:pending.quote});
-      return;
-    }
     const quote=await sales('cotizar',request);
     reviewedOrder={...request,token:pending.token,quote:quote.quote};
     $('order-preview').textContent='Productos '+euro(quote.subtotal*100)+' · Envío '+euro(quote.shipping*100)+(quote.tax?' · Impuestos '+euro(quote.tax*100):'')+(quote.handling?' · Otros gastos '+euro(quote.handling*100):'')+' · Total '+euro(quote.total*100);
