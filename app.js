@@ -106,10 +106,12 @@ $('checkout').addEventListener('submit',async event=>{
   setCheckoutBusy(true);$('receipt').textContent='Consultando el total del pedido…';
   try{
     const previous=load('pending-sale',null);
-    const selection=JSON.stringify(request);
+    const delivery=Object.fromEntries([...new FormData(event.currentTarget)].filter(([key])=>key!=='shipping').map(([key,value])=>[key,value.trim()]));
+    const selection=await saleSelection({ ...request, delivery });
     const pending=previous?.selection===selection?previous:{selection,token:crypto.randomUUID()};
-    const quote=await sales('cotizar',request);
-    reviewedOrder={...request,token:pending.token,quote:quote.quote};
+    const quote=await sales('cotizar',{...request,delivery});
+    reviewedOrder={...request,delivery,token:pending.token,quote:quote.quote};
+    $('delivery-preview').textContent=[delivery.fullName,delivery.street,delivery.unit,delivery.postal+' '+delivery.city,delivery.region,delivery.phone].filter(Boolean).join(' · ');
     $('order-preview').textContent='Productos '+euro(quote.subtotal*100)+' · Envío '+euro(quote.shipping*100)+(quote.tax?' · Impuestos '+euro(quote.tax*100):'')+(quote.handling?' · Otros gastos '+euro(quote.handling*100):'')+' · Total '+euro(quote.total*100);
     $('receipt').textContent='';
     const dialog=$('order-confirm');
@@ -117,9 +119,13 @@ $('checkout').addEventListener('submit',async event=>{
   }catch(error){$('receipt').textContent=orderError(error);}
   finally{setCheckoutBusy(false);}
 });
+async function saleSelection(selection){
+  const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify(selection)));
+  return Array.from(new Uint8Array(digest), value=>value.toString(16).padStart(2,'0')).join('');
+}
 async function confirmSale(request){
   const {token,quote,...selection}=request;
-  save('pending-sale',{selection:JSON.stringify(selection),token,quote});
+  save('pending-sale',{selection:await saleSelection(selection),token,quote});
   try{
     const result=await sales('pedido',request);
     localStorage.removeItem('mascotas:pending-sale');

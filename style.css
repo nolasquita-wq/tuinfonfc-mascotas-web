@@ -47,3 +47,5 @@ nav a{padding:6px 9px}
 
 #pedido h1{font:400 clamp(38px,5.3vw,78px)/1.06 Georgia,serif;letter-spacing:-2px}
 #pedido button,#order-confirm button:not(.secondary){background:#176653;color:#fffef9;border-color:#176653;border-radius:5px}
+
+.delivery-fields{display:grid;gap:12px;border:0;margin:0;padding:0;min-width:0}.delivery-fields legend{font-weight:bold;margin-bottom:10px}.delivery-fields input{width:100%}
