@@ -102,18 +102,20 @@ function orderError(error){
 $('checkout').addEventListener('submit',async event=>{
   event.preventDefault();
   if(checkoutBusy||!rows().length)return;
-  const request={items:rows().map(p=>({id:p.id,quantity:cart[p.id]})),country:$('checkout').elements.shipping.value==='canarias'?'ES-CN':'ES-PB'};
+  const request={items:rows().map(p=>({id:p.id,quantity:cart[p.id]})),country:$('checkout').elements.shipping.value==='canarias'?'ES-CN':'ES-PB',payment:event.currentTarget.elements.payment.value};
   setCheckoutBusy(true);$('receipt').textContent='Consultando el total del pedido…';
   try{
     const previous=load('pending-sale',null);
-    const delivery=Object.fromEntries([...new FormData(event.currentTarget)].filter(([key])=>key!=='shipping').map(([key,value])=>[key,value.trim()]));
+    const delivery=Object.fromEntries([...new FormData(event.currentTarget)].filter(([key])=>key!=='shipping'&&key!=='payment').map(([key,value])=>[key,value.trim()]));
     const selection=await saleSelection({ ...request, delivery });
     const pending=previous?.selection===selection?previous:{selection,token:crypto.randomUUID()};
     const quote=await sales('cotizar',{...request,delivery});
+    $('contact-preview').textContent=[delivery.email,request.payment.replace(/ simulad[oa]$/, '')].join(' · ');
     reviewedOrder={...request,delivery,token:pending.token,quote:quote.quote};
     $('delivery-preview').textContent=[delivery.fullName,delivery.street,delivery.unit,delivery.postal+' '+delivery.city,delivery.region,delivery.phone].filter(Boolean).join(' · ');
     $('order-preview').textContent='Productos '+euro(quote.subtotal*100)+' · Envío '+euro(quote.shipping*100)+(quote.tax?' · Impuestos '+euro(quote.tax*100):'')+(quote.handling?' · Otros gastos '+euro(quote.handling*100):'')+' · Total '+euro(quote.total*100);
     $('receipt').textContent='';
+    $('price-note').textContent=[quote.taxLabel?'Etiqueta fiscal prevista: '+quote.taxLabel:'', 'Moneda del pedido: EUR'].filter(Boolean).join(' · ');
     const dialog=$('order-confirm');
     dialog.returnValue='';dialog.showModal();
   }catch(error){$('receipt').textContent=orderError(error);}

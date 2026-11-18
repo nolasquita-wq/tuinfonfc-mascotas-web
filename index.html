@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="es"><head><meta charset="utf-8"><meta name="robots" content="noindex,nofollow"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://tuinfonfc-prototipo.onrender.com; img-src 'self' data: https://tuinfonfc-prototipo.onrender.com; object-src 'none'; base-uri 'none'; form-action 'none'"><title>TuInfoNFC Mascotas</title><meta name="description" content="Identificación NFC para mascotas y accesorios para collar o arnés.">
-<link rel="icon" href="marca.svg"><link rel="stylesheet" href="style.css?v=020"><script src="app.js?v=020" defer></script></head>
+<link rel="icon" href="marca.svg"><link rel="stylesheet" href="style.css?v=020"><script src="app.js?v=021" defer></script></head>
 <body><header><a class="brand" href="#inicio"><img src="marca.svg" alt="">TuInfoNFC <b>Mascotas</b></a><nav aria-label="Principal"><a href="#tienda">Tienda</a><a href="#mis-chapas">Mis chapas</a><a href="#ayuda">Cómo funciona</a><a href="#compatibilidad">Compatibilidad NFC</a><a href="#manual">Aplicación y manuales</a><a class="basket" href="#carrito">Cesta <span id="count">0</span></a></nav></header>
 <main>
 <section id="inicio" class="page"><div class="hero"><div><p class="eyebrow">IDENTIFICACIÓN NFC PARA MASCOTAS</p><h1>Un pequeño gesto.<br>Un camino de vuelta.</h1><p class="lead">Si alguien encuentra a tu perro o a tu gato, una chapa en su collar o arnés le permite avisarte con su móvil, allí mismo.</p><div class="actions"><a class="button" href="#tienda">Explorar la tienda</a><a class="button secondary" href="#manual">Aplicación y manuales</a></div></div><div class="hero-media"><video class="hero-art" controls muted playsinline preload="metadata" poster="paseo-portada.svg" aria-label="Demostración de cómo acercar el móvil a una chapa NFC"><source src="paseo-nfc-portada.mp4" type="video/mp4"></video></div></div>
@@ -20,7 +20,7 @@
           <label>Destino<select name="shipping"><option value="canarias">España · Canarias</option><option value="peninsula">España · Península y Baleares</option></select></label>
         </section>
         <section class="panel">
-          <fieldset class="delivery-fields"><legend>Datos de entrega</legend>
+          <fieldset class="delivery-fields"><legend>Datos de entrega</legend><label>Correo electrónico<input type="email" name="email" autocomplete="email" maxlength="254" required></label>
 <label>Nombre y apellidos<input name="fullName" autocomplete="shipping name" maxlength="100" required></label>
 <label>Calle y número<input name="street" autocomplete="shipping address-line1" maxlength="140" required></label>
 <label>Piso, puerta u otros datos (opcional)<input name="unit" autocomplete="shipping address-line2" maxlength="100"></label>
@@ -29,7 +29,7 @@
 <label>Provincia o región<input name="region" autocomplete="shipping address-level1" maxlength="80" required></label>
 <label>Teléfono de contacto (opcional)<input type="tel" name="phone" autocomplete="shipping tel" maxlength="32"></label>
 </fieldset>
-          <p><strong>Forma de pago</strong><br>Tarjeta</p>
+          <fieldset><legend>Facturación</legend><label class="check-label"><input type="checkbox" name="electronicInvoice" value="1"> Prefiero recibir la factura por correo electrónico.</label></fieldset><fieldset><legend>Forma de pago</legend><label>Método<select name="payment"><option value="Tarjeta simulada">Tarjeta</option><option value="Bizum simulado">Bizum</option><option value="PayPal simulado">PayPal</option><option value="Apple Pay / Google Pay simulado">Apple Pay / Google Pay</option></select></label><p class="note">Cobro no disponible. Puedes revisar el pedido sin introducir datos bancarios.</p><details><summary>Ver cómo se paga con tarjeta</summary><p>En una compra, la pasarela te pedirá el número de tarjeta, la fecha de caducidad y el código de seguridad.</p><dl><dt>Número de tarjeta</dt><dd>•••• •••• •••• ••••</dd><dt>Caducidad</dt><dd>MM/AA</dd><dt>Código de seguridad</dt><dd>•••</dd></dl></details></fieldset>
           <button>Revisar pedido</button>
         </section>
       </form>
@@ -76,7 +76,7 @@
 <section id="contacto" class="page" hidden><h1>Contacto</h1><div class="panel"><p>El canal de atención comercial se publicará al habilitar la venta. Para dudas de uso, consulta <a href="#ayuda">cómo funciona la chapa</a> y <a href="#seguridad">seguridad NFC</a>.</p></div></section>
 </main><footer><a class="brand" href="#inicio"><img src="marca.svg" alt="">TuInfoNFC Mascotas</a><a href="#pedidos">Mis pedidos</a><a href="#compatibilidad">Compatibilidad NFC</a><a href="#privacidad">Privacidad</a><a href="#seguridad">Seguridad NFC</a><a href="#condiciones">Condiciones de uso</a><a href="#envios">Envíos</a><a href="#devoluciones">Devoluciones</a><a href="#garantia">Garantía</a><a href="#aviso-legal">Aviso legal</a><a href="#contacto">Contacto</a></footer>
 <dialog id="confirm"><form method="dialog"><p>¿Quieres borrar el contenido NFC de esta chapa?</p><button value="cancel" class="secondary">Cancelar</button> <button value="erase">Confirmar borrado</button></form></dialog><dialog id="write-confirm"><form method="dialog"><h2>Antes de grabar</h2><p>Quien acerque un móvil compatible podrá leer el contenido. Revisa que quieras compartirlo.</p><p id="write-preview" class="write-preview"></p><label><input type="checkbox" id="replace-nfc"> Quiero sustituir el contenido anterior de la chapa.</label><button value="cancel" class="secondary">Cancelar</button> <button id="write-approve" value="write" disabled>Grabar</button></form></dialog>
-<dialog id="order-confirm"><form method="dialog"><h2>Confirma el pedido</h2><p id="order-preview"></p><p id="delivery-preview"></p><p>Confirma que los datos de entrega y el total son correctos.</p><button value="cancel" class="secondary">Volver</button> <button value="save">Guardar pedido</button></form></dialog></body></html>
+<dialog id="order-confirm"><form method="dialog"><h2>Confirma el pedido</h2><p id="order-preview"></p><p id="delivery-preview"></p><p id="contact-preview"></p><p id="price-note"></p><p>Confirma que los datos de entrega y el total son correctos.</p><button value="cancel" class="secondary">Volver</button> <button value="save">Guardar pedido</button></form></dialog></body></html>
 
 
 
