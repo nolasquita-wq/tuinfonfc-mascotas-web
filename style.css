@@ -49,3 +49,6 @@ nav a{padding:6px 9px}
 #pedido button,#order-confirm button:not(.secondary){background:#176653;color:#fffef9;border-color:#176653;border-radius:5px}
 
 .delivery-fields{display:grid;gap:12px;border:0;margin:0;padding:0;min-width:0}.delivery-fields legend{font-weight:bold;margin-bottom:10px}.delivery-fields input{width:100%}
+
+[data-billing-address]:not([hidden]) { display: grid; gap: .75rem; margin-block: .75rem; }
+[data-catalog-status] button { margin-block: .25rem; }

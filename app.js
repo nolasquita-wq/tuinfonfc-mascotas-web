@@ -5,17 +5,25 @@ let catalog = [
   { id:'pasador', name:'Pasador para arnés', price:990, body:'Formato que se desliza por una correa.' },
   { id:'clip', name:'Chapa con clip', price:1090, body:'Accesorio desmontable para collar o arnés.' }
 ];
+let catalogReady = false;
+let catalogRequest = 0;
 const $ = id => document.getElementById(id);
+const priceText = n => catalogReady ? euro(n) : 'Precio sin confirmar';
 const euro = n => new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR'}).format(n/100);
 const escape = value => String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function load(key,fallback) { try { return JSON.parse(localStorage.getItem('mascotas:'+key)) ?? fallback; } catch { return fallback; } }
 function save(key,value) { localStorage.setItem('mascotas:'+key,JSON.stringify(value)); }
 let cart=load('cart',{}), orders=load('orders',[]), profiles=load('profiles',[]);
+for (const id of Object.keys(cart)) {
+  if (/^[a-z0-9-]{1,51}$/.test(id) && !catalog.some(product => product.id === id)) {
+    catalog.push({ id, name: 'Artículo guardado', price: 0, stock: 0, visible: false });
+  }
+}
 const native=window.MascotasNfc;
 if(native) document.documentElement.classList.add('native');
 const salesBase='https://tuinfonfc-prototipo.onrender.com';
 async function sales(path,payload){
-  const response=await fetch(salesBase+'/api/mascotas/'+path,payload===undefined?{signal:AbortSignal.timeout(12000)}:{
+  const response=await fetch(salesBase+'/api/mascotas/'+path,payload===undefined?{cache:'no-store',signal:AbortSignal.timeout(12000)}:{
     method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:AbortSignal.timeout(12000)
   });
   if(!response.headers.get('content-type')?.includes('application/json'))throw Error('No se pudo conectar con la tienda. Vuelve a intentarlo.');
@@ -38,14 +46,14 @@ function setQty(id,amount) {
     line.querySelector('[data-delta="-1"]').disabled=cart[id]===1;
     line.querySelector('[data-delta="1"]').disabled=cart[id]===20;
     line.querySelector('[data-line-total]').textContent=euro(catalog.find(p=>p.id===id).price*cart[id]);
-    $('cart').querySelector('[data-subtotal]').textContent='Subtotal '+euro(subtotal());
+    $('cart').querySelector('[data-subtotal]').textContent='Subtotal '+priceText(subtotal());
     renderSummary();
   }else renderCart();
 }
 function renderCart() {
   $('cart').innerHTML=rows().length
     ? '<div class="panel">'+rows().map(p=>`<div class="line cart-line">
-      <a class="cart-product" href="#producto/${p.id}">${art(p)}<span><strong>${escape(p.name)}</strong><br>${euro(p.price)} por unidad</span></a>
+      <a class="cart-product" href="#producto/${p.id}">${art(p)}<span><strong>${escape(p.name)}</strong><br>${!catalogReady ? 'Precio sin confirmar' : p.visible === false ? 'No disponible' : euro(p.price)+' por unidad'}</span></a>
       <div class="quantity">
         <button class="secondary" data-qty="${p.id}" data-delta="-1" aria-label="Quitar una unidad" ${cart[p.id]===1?'disabled':''}>−</button>
         <input type="number" min="1" max="20" step="1" data-count="${p.id}" value="${cart[p.id]}" aria-label="Cantidad de ${escape(p.name)}">
@@ -53,8 +61,8 @@ function renderCart() {
       </div>
       <button class="secondary remove-item" data-remove="${p.id}" aria-label="Quitar ${escape(p.name)} de la cesta">
         <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 10v7m4-7v7"/></svg>
-      </button><strong data-line-total>${euro(p.price*cart[p.id])}</strong>
-      </div>`).join('')+'<p class="price" data-subtotal>Subtotal '+euro(subtotal())+'</p><div class="actions"><a class="button" href="#pedido">Continuar al pedido</a><a class="button secondary" href="#tienda">Seguir comprando</a></div></div>'
+      </button><strong data-line-total>${priceText(p.price*cart[p.id])}</strong>
+      </div>`).join('')+'<p class="price" data-subtotal>Subtotal '+priceText(subtotal())+'</p><div class="actions"><a class="button" href="#pedido">Continuar al pedido</a><a class="button secondary" href="#tienda">Seguir comprando</a></div></div>'
     : '<div class="panel"><h2>Tu cesta te está esperando.</h2><p>Elige una chapa para el collar o el arnés.</p><a class="button" href="#tienda">Explorar dispositivos</a></div>';
   renderSummary();
 }
@@ -63,27 +71,32 @@ function renderSummary(){
   $('summary').innerHTML=rows().length
     ? '<h2>Resumen del pedido</h2>'+rows().map(p=>`<div class="checkout-item">
         ${art(p)}<span>${escape(p.name)}<small>Cantidad: ${cart[p.id]}</small></span>
-        <strong>${euro(cart[p.id]*p.price)}</strong></div>`).join('')
-      +'<div class="checkout-total"><span>Subtotal</span><strong>'+euro(subtotal())+'</strong></div>'
+        <strong>${priceText(cart[p.id]*p.price)}</strong></div>`).join('')
+      +'<div class="checkout-total"><span>Subtotal</span><strong>'+priceText(subtotal())+'</strong></div>'
     : '<p>La cesta está vacía.</p>';
   $('checkout').hidden=!rows().length;
+  updateCheckoutAvailability();
 }
 function renderProducts(){
-$('products').innerHTML=catalog.filter(p=>p.visible!==false).map(p=>'<article class="card"><a href="#producto/'+p.id+'">'+art(p)+'<h2>'+escape(p.name)+'</h2></a><p>'+escape(p.body)+'</p><p class="price">'+euro(p.price)+'</p><button data-add="'+p.id+'" '+(p.stock===0?'disabled':'')+'> '+(p.stock===0?'Agotado':'Añadir a la cesta')+'</button></article>').join('');
+$('products').innerHTML=catalog.filter(p=>p.visible!==false).map(p=>'<article class="card"><a href="#producto/'+p.id+'">'+art(p)+'<h2>'+escape(p.name)+'</h2></a><p>'+escape(p.body)+'</p><p class="price">'+priceText(p.price)+'</p><button data-add="'+p.id+'" '+(p.stock===0?'disabled':'')+'> '+(p.stock===0?'Agotado':'Añadir a la cesta')+'</button></article>').join('');
 }
 const heroVideo=document.querySelector('.hero-media video');
 let previousPage;
-function route() {
+function route(moveFocus = false) {
   const [page,id]=location.hash.slice(1).split('/');
   const product=catalog.find(p=>p.id===id&&p.visible!==false);
   const target=page==='producto'&&!product?'tienda':(document.getElementById(page)?.classList.contains('page')?page:'inicio');
   document.querySelectorAll('.page').forEach(el=>el.hidden=el.id!==target);
   const navTarget={producto:'tienda',pedido:'carrito',pedidos:'carrito'}[target]||target;
   document.querySelectorAll('nav a').forEach(a=>{if(a.hash==='#'+navTarget) a.setAttribute('aria-current','page'); else a.removeAttribute('aria-current');});
-  if(target==='producto') $('product').innerHTML='<div class="product-detail">'+art(product)+'<div><p class="eyebrow">ACCESORIOS NFC</p><h1>' +escape(product.name)+'</h1><p>'+escape(product.body)+'</p><p class="price">'+euro(product.price)+'</p><button data-add="'+product.id+'">Añadir a la cesta</button></div></div>';
+  if(target==='producto') $('product').innerHTML='<div class="product-detail">'+art(product)+'<div><p class="eyebrow">ACCESORIOS NFC</p><h1>' +escape(product.name)+'</h1><p>'+escape(product.body)+'</p><p class="price">'+priceText(product.price)+'</p><button data-add="'+product.id+'">Añadir a la cesta</button></div></div>';
   if(target!=='inicio') heroVideo.pause();
   else if(previousPage!=='inicio'&&!matchMedia('(prefers-reduced-motion: reduce)').matches){
     heroVideo.play().catch(()=>{});
+  }
+  if (moveFocus && previousPage !== target) {
+    const heading = $(target).querySelector('h1, h2');
+    if (heading) { heading.tabIndex = -1; heading.focus({ preventScroll: true }); }
   }
   previousPage=target;
   if(target==='pedidos') $('orders').innerHTML=orders.length?orders.map(o=>'<article class="panel"><h2>'+escape(o.id)+'</h2><p>'+escape(o.alias)+' · '+euro(o.total)+'</p><p>'+escape(o.items.join(', '))+'</p></article>').join(''):'<p>Aún no hay pedidos guardados aquí.</p>';
@@ -94,14 +107,18 @@ let reviewedOrder=null;
 let checkoutBusy=false;
 function setCheckoutBusy(busy){
   checkoutBusy=busy;
-  $('checkout').querySelector('button').disabled=busy;
+  updateCheckoutAvailability();
+}
+function updateCheckoutAvailability() {
+  const unavailable = rows().some(product => product.visible === false || product.stock < cart[product.id]);
+  $('checkout').querySelector('button').disabled = checkoutBusy || !catalogReady || unavailable;
 }
 function orderError(error){
   return error instanceof TypeError||error.name==='TimeoutError'?'No se pudo conectar con la tienda. Vuelve a intentarlo.':error.message;
 }
 $('checkout').addEventListener('submit',async event=>{
   event.preventDefault();
-  if(checkoutBusy||!rows().length)return;
+  if(checkoutBusy||!catalogReady||!rows().length)return;
   const request={items:rows().map(p=>({id:p.id,quantity:cart[p.id]})),country:$('checkout').elements.shipping.value==='canarias'?'ES-CN':'ES-PB',payment:event.currentTarget.elements.payment.value};
   setCheckoutBusy(true);$('receipt').textContent='Consultando el total del pedido…';
   try{
@@ -113,6 +130,11 @@ $('checkout').addEventListener('submit',async event=>{
     $('contact-preview').textContent=[delivery.email,request.payment.replace(/ simulad[oa]$/, '')].join(' · ');
     reviewedOrder={...request,delivery,token:pending.token,quote:quote.quote};
     $('delivery-preview').textContent=[delivery.fullName,delivery.street,delivery.unit,delivery.postal+' '+delivery.city,delivery.region,delivery.phone].filter(Boolean).join(' · ');
+    const billing = $('billing-preview');
+    billing.hidden = delivery.billingDifferent !== '1';
+    billing.textContent = billing.hidden ? '' : 'Facturación: ' +
+      [delivery.billingName, delivery.billingStreet, delivery.billingUnit, delivery.billingPostal,
+        delivery.billingCity, delivery.billingRegion, delivery.billingCountry].filter(Boolean).join(' · ');
     $('order-preview').textContent='Productos '+euro(quote.subtotal*100)+' · Envío '+euro(quote.shipping*100)+(quote.tax?' · Impuestos '+euro(quote.tax*100):'')+(quote.handling?' · Otros gastos '+euro(quote.handling*100):'')+' · Total '+euro(quote.total*100);
     $('receipt').textContent='';
     $('price-note').textContent=[quote.taxLabel?'Etiqueta fiscal prevista: '+quote.taxLabel:'', 'Moneda del pedido: EUR'].filter(Boolean).join(' · ');
@@ -137,13 +159,16 @@ async function confirmSale(request){
     $('receipt').textContent='Pedido '+order.id+' registrado. ';
     const link=document.createElement('a');link.href='#pedidos';link.textContent='Ver pedidos';$('receipt').append(link);
   }catch(error){
-    if(error.name!=='TypeError'&&error.name!=='TimeoutError'&&!error.message.startsWith('No se pudo'))localStorage.removeItem('mascotas:pending-sale');
+    if (error.message.startsWith('El pedido ha cambiado.')) {
+      localStorage.removeItem('mascotas:pending-sale');
+      void refreshCatalog();
+    }
     throw error;
   }
 }
 $('order-confirm').onclose=async()=>{
   const request=reviewedOrder;reviewedOrder=null;
-  if(!request||$('order-confirm').returnValue!=='save'||checkoutBusy)return;
+  if(!request||$('order-confirm').returnValue!=='save'||checkoutBusy||!catalogReady)return;
   setCheckoutBusy(true);
   try{await confirmSale(request);}
   catch(error){$('receipt').textContent=orderError(error);}
@@ -223,15 +248,61 @@ $('write-confirm').onclose=()=>{
   const choice=pendingWrite;pendingWrite=null;
   if(choice&&$('write-confirm').returnValue==='write'&&$('replace-nfc').checked)nfc('write',choice.kind,choice.value);
 };
-window.addEventListener('hashchange',route);
-renderProducts();renderCart();renderProfiles();route();
-sales('catalogo').then(products=>{
-  catalog=products;
-  renderProducts();renderCart();
-  if(location.hash.startsWith('#producto/'))route();
-}).catch(()=>{});
+window.addEventListener('hashchange', () => route(true));
+function showCatalogState(message) {
+  for (const notice of document.querySelectorAll('[data-catalog-status]')) {
+    notice.hidden = !message;
+    notice.querySelector('span').textContent = message;
+  }
+  renderProducts();
+  renderCart();
+  updateCheckoutAvailability();
+  if (location.hash.startsWith('#producto/')) route();
+}
+async function refreshCatalog() {
+  const request = ++catalogRequest;
+  catalogReady = false;
+  showCatalogState('Consultando precios y existencias…');
+  try {
+    const products = await sales('catalogo');
+    if (request !== catalogRequest) return;
+    const current = new Set(products.map(product => product.id));
+    const removed = Object.keys(cart).filter(id => /^[a-z0-9-]{1,60}$/.test(id) && !current.has(id)).map(id => {
+      const known = catalog.find(product => product.id === id);
+      return { id, name: known?.name || 'Artículo no disponible', price: 0, stock: 0, visible: false };
+    });
+    catalog = [...products, ...removed];
+    catalogReady = true;
+    showCatalogState(rows().some(product => product.visible === false || product.stock < cart[product.id])
+      ? 'Revisa las cantidades o retira los artículos que ya no están disponibles.' : '');
+  } catch {
+    if (request === catalogRequest) showCatalogState('No se pudieron actualizar los precios. Tu cesta se conserva. Puedes reintentar.');
+  }
+}
+for (const retry of document.querySelectorAll('[data-catalog-retry]')) retry.addEventListener('click', refreshCatalog);
+window.addEventListener('online', refreshCatalog);
+window.addEventListener('offline', () => {
+  catalogRequest++;
+  catalogReady = false;
+  showCatalogState('Estás sin conexión. Tu cesta se conserva.');
+});
+renderProfiles();
+route();
+refreshCatalog();
 
-
-
-
-
+document.querySelectorAll('[data-billing]').forEach(section => {
+  const toggle = section.querySelector('[name="billingDifferent"]');
+  const address = section.querySelector('[data-billing-address]');
+  function updateBilling() {
+    address.hidden = !toggle.checked;
+    for (const input of address.querySelectorAll('input')) {
+      input.disabled = !toggle.checked;
+      input.required = toggle.checked && input.hasAttribute('data-billing-required');
+    }
+    if (toggle.checked) section.open = true;
+  }
+  toggle.addEventListener('change', updateBilling);
+  toggle.form.addEventListener('reset', () => queueMicrotask(updateBilling));
+  window.addEventListener('pageshow', updateBilling);
+  updateBilling();
+});
