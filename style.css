@@ -52,3 +52,11 @@ nav a{padding:6px 9px}
 
 [data-billing-address]:not([hidden]) { display: grid; gap: .75rem; margin-block: .75rem; }
 [data-catalog-status] button { margin-block: .25rem; }
+
+/* Keep each price and purchase action together at the foot of its product card. */
+#products .card > .price { margin-top:auto; margin-bottom:14px; }
+#products .card > button { margin-top:0; min-height:48px; }
+.checkout-form .check-label { display:flex; align-items:flex-start; gap:10px; font-weight:400; line-height:1.5; }
+.checkout-form .check-label > input[type="checkbox"] { display:block; flex:0 0 20px; width:20px; height:20px; margin:2px 0 0; padding:0; }
+.checkout-form > fieldset { min-width:0; margin:0; }
+.checkout-form > button[type="submit"], .checkout-form > button:not([type]), .checkout-form .panel > button { margin-top:20px; min-height:48px; }
