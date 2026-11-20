@@ -111,7 +111,7 @@ function setCheckoutBusy(busy){
 }
 function updateCheckoutAvailability() {
   const unavailable = rows().some(product => product.visible === false || product.stock < cart[product.id]);
-  $('checkout').querySelector('button').disabled = checkoutBusy || !catalogReady || unavailable;
+  $('checkout').querySelector('button:not([type]),button[type="submit"]').disabled = checkoutBusy || !catalogReady || unavailable;
 }
 function orderError(error){
   return error instanceof TypeError||error.name==='TimeoutError'?'No se pudo conectar con la tienda. Vuelve a intentarlo.':error.message;
