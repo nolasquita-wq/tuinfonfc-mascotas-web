@@ -102,7 +102,7 @@ function route(moveFocus = false) {
   if(target==='pedidos') $('orders').innerHTML=orders.length?orders.map(o=>'<article class="panel"><h2>'+escape(o.id)+'</h2><p>'+escape(o.alias)+' · '+euro(o.total)+'</p><p>'+escape(o.items.join(', '))+'</p></article>').join(''):'<p>Aún no hay pedidos guardados aquí.</p>';
   window.scrollTo(0,0);
 }
-$('checkout').elements.shipping.addEventListener('change',renderSummary);
+$('checkout').elements.addressCountry.addEventListener('change',()=>{reviewedOrder=null;renderSummary();});
 let reviewedOrder=null;
 let checkoutBusy=false;
 function setCheckoutBusy(busy){
@@ -119,7 +119,7 @@ function orderError(error){
 $('checkout').addEventListener('submit',async event=>{
   event.preventDefault();
   if(checkoutBusy||!catalogReady||!rows().length)return;
-  const request={items:rows().map(p=>({id:p.id,quantity:cart[p.id]})),country:$('checkout').elements.shipping.value==='canarias'?'ES-CN':'ES-PB',payment:event.currentTarget.elements.payment.value};
+  const request={items:rows().map(p=>({id:p.id,quantity:cart[p.id]})),country:$('checkout').elements.addressCountry.value,payment:event.currentTarget.elements.payment.value};
   setCheckoutBusy(true);$('receipt').textContent='Consultando el total del pedido…';
   try{
     const previous=load('pending-sale',null);

@@ -1,6 +1,8 @@
-import {attachAddress,loadAddressConfiguration} from './address-helper.mjs';
+import {attachAddress,loadAddressConfiguration,postalCountries} from './address-helper.mjs';
 const script=document.querySelector('script[src*="address-init.mjs"]');
 const api=script?.dataset.addressApi||location.origin;
+const names=new Intl.DisplayNames(['es'],{type:'region'});
+for(const form of document.forms){for(const fieldName of ['addressCountry','billingCountry']){const country=form.elements.namedItem(fieldName);if(!country)continue;if(country.tagName==='SELECT'){const current=country.value||'ES';country.replaceChildren(...postalCountries.map(code=>{const o=document.createElement('option');o.value=code;o.textContent=names.of(code);return o;}).sort((a,b)=>a.textContent.localeCompare(b.textContent,'es')));country.value=current;const adapt=()=>{const postal=form.elements.namedItem(fieldName==='addressCountry'?'postal':'billingPostal');const region=form.elements.namedItem(fieldName==='addressCountry'?'region':'billingRegion');if(postal)postal.required=country.value==='ES';if(region)region.required=false;};country.addEventListener('change',adapt);adapt();}else{const list=document.createElement('datalist');list.id='countries-'+fieldName;for(const code of postalCountries){const o=document.createElement('option');o.value=names.of(code);list.append(o);}country.after(list);country.setAttribute('list',list.id);}}}
 let inFlight=false,finished=false,retryTimer;
 async function initialize(){
  if(inFlight||finished)return;
