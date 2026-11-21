@@ -59,3 +59,9 @@ export function attachAddress(form,fields,config=disabledConfig){
   },800);
  });
 }
+
+// Configuration may wake a sleeping free server. Never freeze the manual form.
+export async function loadAddressConfiguration(url,transport=fetch,timeoutMs=65000){
+ const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeoutMs);
+ try{const response=await transport(url,{credentials:'omit',cache:'no-store',signal:controller.signal});if(!response.ok)throw Error('unavailable');const data=await response.json();if(typeof data.enabled!=='boolean'||!Array.isArray(data.countries))throw Error('invalid-config');return data;}finally{clearTimeout(timer);}
+}
